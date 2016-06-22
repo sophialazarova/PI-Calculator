@@ -1,4 +1,3 @@
-import java.awt.BorderLayout;
 import java.awt.EventQueue;
 
 import javax.swing.JFrame;
@@ -10,11 +9,6 @@ import org.apfloat.ApfloatContext;
 
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.awt.event.ActionEvent;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -26,23 +20,20 @@ import javax.swing.JTextPane;
 
 public class CalculatorGUI extends JFrame {
 
+	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
-	private JTextField textField;
-	private JTextField textField_1;
-	private JTextArea textArea;
-	private JTextPane textPane;
+	private JTextField numberOfDigitsField;
+	private JTextField numberOfThreadsField;
+	private JTextArea resultField;
+	private JTextPane logField;
+    private long digits;
+    private  int threads;
+    private boolean quiet;
 
-	/**
-	 * Launch the application.
-	 */
 	public static void main(String[] args) {
+		
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
-			       long digits = 1_000_000;
-			        int threads = 1;
-			        //String filename = "pi.txt";
-			        boolean quiet = false;
-			        
 				try {
 					CalculatorGUI frame = new CalculatorGUI();
 					frame.setVisible(true);
@@ -53,10 +44,9 @@ public class CalculatorGUI extends JFrame {
 		});
 	}
 
-	/**
-	 * Create the frame.
-	 */
+
 	public CalculatorGUI() {
+		quiet = false;
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 565, 716);
 		setResizable(false);
@@ -65,53 +55,61 @@ public class CalculatorGUI extends JFrame {
 		setContentPane(contentPane);
 		contentPane.setLayout(null);
 		
-		JButton btnNewButton = new JButton("Calculate");
-		btnNewButton.addActionListener(new ActionListener() {
+		JButton calculateButton = new JButton("Calculate");
+		calculateButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				runCalculator(10000l,2,false);
+				
+				try {
+					digits = Long.parseLong(numberOfDigitsField.getText());
+					threads = Integer.parseInt(numberOfThreadsField.getText());
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+				
+				runCalculator(digits,threads,false);
 			}
 		});
-		btnNewButton.setBounds(158, 204, 259, 36);
-		contentPane.add(btnNewButton);
+		calculateButton.setBounds(158, 204, 259, 36);
+		contentPane.add(calculateButton);
 		
-		textField = new JTextField();
-		textField.setBounds(30, 107, 232, 57);
-		contentPane.add(textField);
-		textField.setColumns(10);
+		numberOfDigitsField = new JTextField();
+		numberOfDigitsField.setBounds(30, 107, 232, 57);
+		contentPane.add(numberOfDigitsField);
+		numberOfDigitsField.setColumns(10);
 		
-		textField_1 = new JTextField();
-		textField_1.setBounds(303, 107, 232, 57);
-		contentPane.add(textField_1);
-		textField_1.setColumns(10);
+		numberOfThreadsField = new JTextField();
+		numberOfThreadsField.setBounds(303, 107, 232, 57);
+		contentPane.add(numberOfThreadsField);
+		numberOfThreadsField.setColumns(10);
 		
-		JLabel lblNewLabel_1 = new JLabel("Accuracy");
-		lblNewLabel_1.setBounds(30, 85, 61, 16);
-		contentPane.add(lblNewLabel_1);
+		JLabel accuracyLabel = new JLabel("Accuracy");
+		accuracyLabel.setBounds(30, 85, 61, 16);
+		contentPane.add(accuracyLabel);
 		
-		JLabel lblNewLabel_2 = new JLabel("Threads");
-		lblNewLabel_2.setHorizontalAlignment(SwingConstants.RIGHT);
-		lblNewLabel_2.setBounds(474, 85, 61, 16);
-		contentPane.add(lblNewLabel_2);
+		JLabel threadsLabel = new JLabel("Threads");
+		threadsLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+		threadsLabel.setBounds(474, 85, 61, 16);
+		contentPane.add(threadsLabel);
 		
-		JLabel lblPiCalculator = new JLabel("PI Calculator");
-		lblPiCalculator.setHorizontalAlignment(SwingConstants.CENTER);
-		lblPiCalculator.setFont(new Font("Lucida Grande", Font.PLAIN, 25));
-		lblPiCalculator.setBounds(158, 19, 259, 57);
-		contentPane.add(lblPiCalculator);
+		JLabel titleLabel = new JLabel("PI Calculator");
+		titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+		titleLabel.setFont(new Font("Lucida Grande", Font.PLAIN, 25));
+		titleLabel.setBounds(158, 19, 259, 57);
+		contentPane.add(titleLabel);
 		
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setBounds(30, 443, 505, 230);
 		contentPane.add(scrollPane);
 		
-		textArea = new JTextArea();
-		textArea.setEditable(false);
-		textArea.setLineWrap(true);
-		textArea.setRows(100);
-		scrollPane.setViewportView(textArea);
+		resultField = new JTextArea();
+		resultField.setEditable(false);
+		resultField.setLineWrap(true);
+		resultField.setRows(100);
+		scrollPane.setViewportView(resultField);
 		
-		textPane = new JTextPane();
-		textPane.setBounds(30, 301, 505, 117);
-		contentPane.add(textPane);
+		logField = new JTextPane();
+		logField.setBounds(30, 301, 505, 117);
+		contentPane.add(logField);
 	}
 	
 	public void runCalculator(long digits, int threads, boolean quiet){
@@ -121,16 +119,7 @@ public class CalculatorGUI extends JFrame {
          Apfloat pi = PiCalculator.calculate(digits, threads, quiet);
          long calcEnd = System.nanoTime();
          
-         textArea.setText(pi.toString());
-         textPane.setText("Total time of calculation: " + (calcEnd-calcBeg)/1_000_000 + " ms.");
-
-//
-//         long fileBeg = System.nanoTime();
-//         try {
-//             Files.write(Paths.get(filename), pi.toString(true).getBytes("utf8"));
-//         } catch (IOException e) {
-//             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, e);
-//         }
-
+         resultField.setText(pi.toString());
+         logField.setText("Total time of calculation: " + (calcEnd-calcBeg)/1_000_000 + " ms.");
 	}
 }
