@@ -9,6 +9,9 @@ import org.apfloat.ApfloatContext;
 
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.awt.event.ActionEvent;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -18,8 +21,9 @@ import java.awt.Font;
 import javax.swing.SwingConstants;
 import javax.swing.JTextPane;
 
-public class CalculatorGUI extends JFrame {
-
+public class Main extends JFrame {
+    public static String log;
+    
 	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
 	private JTextField numberOfDigitsField;
@@ -27,26 +31,58 @@ public class CalculatorGUI extends JFrame {
 	private JTextArea resultField;
 	private JTextPane logField;
     private long digits;
-    private  int threads;
+    private int threads;
     private boolean quiet;
+    private String filename;
+    private boolean useGUI;
 
 	public static void main(String[] args) {
+		Main frame = new Main();
+		frame.parseInitialInput(args, frame);
+	}
+	
+	public void parseInitialInput(String[] args, Main frame){
+		useGUI = true;
+		threads = 1;
+		digits = 3;
+		filename = "pi.txt";
 		
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					CalculatorGUI frame = new CalculatorGUI();
+		for (int i = 0; i < args.length; i++) {
+            switch(args[i]){
+                case "-p":
+                    digits = Long.parseLong(args[i+1]);
+                    i++;
+                    break;
+                case "-t":
+                case "-tasks":
+                    threads = Integer.parseInt(args[i+1]);
+                    i++;
+                    break;
+                case "-o":
+                    filename = args[i+1];
+                    i++;
+                    break;
+                case "-q":
+                    quiet = true;
+                    useGUI = false;
+                    break;
+            }
+        }
+		
+		if (useGUI) {
+			EventQueue.invokeLater(new Runnable() {
+				public void run() {
 					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
 				}
-			}
-		});
+			});
+		}
+		else {
+			this.runCalculator(digits, threads, quiet);
+		}
+		
 	}
 
-
-	public CalculatorGUI() {
-		quiet = false;
+	public Main() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 565, 716);
 		setResizable(false);
@@ -59,11 +95,13 @@ public class CalculatorGUI extends JFrame {
 		calculateButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				
-				try {
-					digits = Long.parseLong(numberOfDigitsField.getText());
-					threads = Integer.parseInt(numberOfThreadsField.getText());
-				} catch (Exception ex) {
-					ex.printStackTrace();
+				if (!numberOfDigitsField.getText().isEmpty() && !numberOfThreadsField.getText().isEmpty()) {
+					try {
+						digits = Long.parseLong(numberOfDigitsField.getText());
+						threads = Integer.parseInt(numberOfThreadsField.getText());
+					} catch (Exception ex) {
+						ex.printStackTrace();
+					}
 				}
 				
 				runCalculator(digits,threads,false);
@@ -108,18 +146,33 @@ public class CalculatorGUI extends JFrame {
 		scrollPane.setViewportView(resultField);
 		
 		logField = new JTextPane();
-		logField.setBounds(30, 301, 505, 117);
+		logField.setBounds(30, 270, 505, 160);
 		contentPane.add(logField);
 	}
 	
-	public void runCalculator(long digits, int threads, boolean quiet){
+	public void runCalculator(long digits, int threads, boolean quiet) {
+		 
 		 ApfloatContext.getGlobalContext().setNumberOfProcessors(threads);
          
          long calcBeg = System.nanoTime();
          Apfloat pi = PiCalculator.calculate(digits, threads, quiet);
          long calcEnd = System.nanoTime();
          
-         resultField.setText(pi.toString());
-         logField.setText("Total time of calculation: " + (calcEnd-calcBeg)/1_000_000 + " ms.");
+         if (useGUI){
+        	 resultField.setText(pi.toString());
+             logField.setText(Main.log + System.lineSeparator() + "Total time of calculation: " + (calcEnd-calcBeg)/1_000_000 + " ms.");
+         }
+         else{
+        	 long fileBeg = System.nanoTime();
+             try {
+                 Files.write(Paths.get(filename), pi.toString(true).getBytes("utf8"));
+                 System.out.println(pi.toString());
+             } catch (IOException e) {
+                 e.printStackTrace();
+             }
+             long fileEnd = System.nanoTime();
+                 System.out.println("Writing result to file '" + filename +
+                         "' took " + (fileEnd-fileBeg)/1000 + " us." + System.lineSeparator());
+         }
 	}
 }

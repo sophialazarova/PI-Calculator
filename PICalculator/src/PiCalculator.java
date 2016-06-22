@@ -38,6 +38,9 @@ public class PiCalculator {
             System.out.println("Calculating Pi up to " + digits + " digits. Number of terms: " + termsAll +
                     ". " + System.lineSeparator() + "Using " + threadsCount + ((threadsCount>1)?" threads" : " thread") +
                     " with average " + (termsPerThread - 1) + " terms per thread.");
+            Main.log = "Calculating Pi up to " + digits + " digits. Number of terms: " + termsAll +
+                    ". " + System.lineSeparator() + "Using " + threadsCount + ((threadsCount>1)?" threads" : " thread") +
+                    " with average " + (termsPerThread - 1) + " terms per thread." + System.lineSeparator();
         }
         
         PiTask[] tasks = new PiTask[threadsCount];
@@ -54,6 +57,8 @@ public class PiCalculator {
         if(!quiet){
             System.out.println("        Time for initialization: " +
                 (endInit-begInit)/1_000_000 + " ms.");
+            Main.log += "        Time for initialization: " +
+                    (endInit-begInit)/1_000_000 + " ms." + System.lineSeparator();
         }
         
         long begCalc = System.nanoTime();
@@ -66,6 +71,7 @@ public class PiCalculator {
         
         if(!quiet){
             System.out.println("    Series calculation started (binary-splitting).");
+            Main.log += "    Series calculation started (binary-splitting)." + System.lineSeparator();
         }
         
         for (int i = 0; i < tasks.length; i++) {
@@ -79,6 +85,8 @@ public class PiCalculator {
         if(!quiet){
             System.out.println("        Time for calculation of binary-split series: " +
                 (endCalc-begCalc)/1_000_000 + " ms.");
+            Main.log += "        Time for calculation of binary-split series: " +
+                    (endCalc-begCalc)/1_000_000 + " ms."+ System.lineSeparator();
         }
         
         Deque<Series> results = new ArrayDeque<Series>();
@@ -89,6 +97,7 @@ public class PiCalculator {
         
         if(!quiet){
             System.out.println("    Started merging of final series.");
+            Main.log += "    Started merging of final series." +System.lineSeparator();
         }
         
         long begMerge = System.nanoTime();
@@ -138,12 +147,15 @@ public class PiCalculator {
         if(!quiet){
             System.out.println("        Time for merging binary-split series: " +
                 (endMerge-begMerge)/1_000_000 + " ms.");
+            Main.log += "        Time for merging binary-split series: " +
+                    (endMerge-begMerge)/1_000_000 + " ms." + System.lineSeparator();
         }
         
         Series res = results.pollFirst();
         
         if(!quiet){
             System.out.println("    Started final calculation of Pi from merged binary-split series.");
+            Main.log += "    Started final calculation of Pi from merged binary-split series." + System.lineSeparator();
         }
         long begFinal = System.nanoTime();
         // Calculate final result
@@ -159,6 +171,8 @@ public class PiCalculator {
         if(!quiet){
             System.out.println("        Time for final calculation of Pi: " +
                 (endFinal-begFinal)/1_000_000 + " ms.");
+            Main.log += "        Time for final calculation of Pi: " +
+                    (endFinal-begFinal)/1_000_000 + " ms." + System.lineSeparator();
         }
         
         return pi;
